@@ -11,7 +11,7 @@ import fitz  # pymupdf
 from llama_index.core import Document
 from llama_index.core.node_parser import SentenceSplitter
 
-from app.core.config import ACTS_FOLDER, CHUNK_SIZE, CHUNK_OVERLAP, TAX_TYPE_MAP
+from core.config import ACTS_FOLDER, CHUNK_SIZE, CHUNK_OVERLAP, TAX_TYPE_MAP
 
 
 def _extract_metadata_from_filename(filename: str) -> dict:

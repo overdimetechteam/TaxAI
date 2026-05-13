@@ -4,16 +4,16 @@ FastAPI route definitions for the Tax Advisor RAG API.
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.schemas import (
+from models.schemas import (
     QueryRequest,
     QueryResponse,
     IngestResponse,
     HealthResponse,
     SourceDocument,
 )
-from app.services.rag_engine import query_tax_advisor
-from app.services.vector_store import get_collection_info, ingest_documents
-from app.services.document_processor import process_acts, chunk_documents
+from services.rag_engine import query_tax_advisor
+from services.vector_store import get_collection_info, ingest_documents
+from services.document_processor import process_acts, chunk_documents
 
 router = APIRouter()
 
