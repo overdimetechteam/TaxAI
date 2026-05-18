@@ -1,8 +1,12 @@
+import os
+import tempfile
+from pathlib import Path
+
 from flask import Blueprint, request, jsonify
 
 from services.rag_engine import query_tax_advisor
 from services.vector_store import get_collection_info, ingest_documents
-from services.document_processor import process_acts, chunk_documents
+from services.document_processor import process_acts, process_file, chunk_documents
 
 api_bp = Blueprint("api", __name__)
 
@@ -42,6 +46,44 @@ def ingest_acts():
         return jsonify({"error": str(e)}), 404
     except Exception as e:
         return jsonify({"error": f"Ingestion failed: {str(e)}"}), 500
+
+
+@api_bp.route("/upload", methods=["POST"])
+def upload_document():
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files["file"]
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        return jsonify({"error": "Only PDF files are supported"}), 400
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            file.save(tmp.name)
+            tmp_path = Path(tmp.name)
+
+        # Rename temp file to use the original filename for metadata extraction
+        named_path = tmp_path.parent / file.filename
+        tmp_path.rename(named_path)
+        tmp_path = named_path
+
+        documents = process_file(tmp_path)
+        chunked = chunk_documents(documents)
+        lc_docs = [{"text": doc.text, "metadata": doc.metadata} for doc in chunked]
+        total_chunks = ingest_documents(lc_docs)
+
+        return jsonify({
+            "status": "success",
+            "filename": file.filename,
+            "pages_processed": len(documents),
+            "total_chunks": total_chunks,
+        })
+    except Exception as e:
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
+    finally:
+        if tmp_path and tmp_path.exists():
+            os.unlink(tmp_path)
 
 
 @api_bp.route("/query", methods=["POST"])
